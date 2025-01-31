@@ -3,13 +3,22 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Document</title>
+    <title>Weather App</title>
+    <link rel="stylesheet" href="../CSS/style2.css">
 </head>
 <body>
-    <div class="weather-info">
-        <p id="city-name"></p>
-        <p id="temperature"></p>
-        <p id="weather-description"></p>
+    <div class="container">
+        <div class="search-box">
+            <input type="text" id="city-input" placeholder="Enter city...">
+            <button id="search-btn">Search</button>
+        </div>
+        <div class="weather-info">
+            <h1></h1> <p id="city-name"></p>
+            <p id="temperature"></p>
+            <p id="weather-description"></p>
+            <div id="error-message"></div> 
+        </div>
     </div>
+    <script src="../JS/app.js"></script>
 </body>
 </html>
