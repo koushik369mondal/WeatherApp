@@ -49,6 +49,32 @@ h1 {
 #search-btn:hover {
     background-color: #0056b3;
 }
+.weather-info {
+    background-color: #b8dbff; 
+    border-radius: 8px; 
+    padding: 20px; 
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); 
+    max-width: 300px; 
+    margin: 0 auto;
+}
+#temperature {
+    font-size: 36px; 
+    color: #333; 
+    margin-bottom: 10px; 
+    font-weight: bold; 
+}
+#weather-description {
+    font-size: 18px; 
+    color: #666; 
+    margin-bottom: 20px;
+    font-style: italic; 
+}
+#city-name {
+    font-size: 24px; 
+    font-weight: bold; 
+    color: #007BFF; 
+    margin-bottom: 10px; 
+}
 
 @media (max-width: 600px) {
     .container {

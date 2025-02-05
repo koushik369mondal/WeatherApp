@@ -10,7 +10,7 @@ document.getElementById('search-btn').addEventListener('click', function() {
 });
 
 async function fetchWeatherData(city) {
-    const apiKey = 'e239d51e37a74f350897f0d3318b2e3e';
+    const apiKey = '92386185a97a841e8c25345a7b728ec3';
     const apiUrl = `https://api.openweathermap.org/data/2.5/weather?q=${city}&appid=${apiKey}&units=metric`;
 
     try {
