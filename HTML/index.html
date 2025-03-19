@@ -8,21 +8,60 @@
 </head>
 <body>
     <div class="container">
-        <h1>Weather App</h1>
-        <div class="search-box">
-            <input type="text" id="city-input" placeholder="Enter city name">
-            <button id="search-btn">Search</button>
-        </div>
-        <div class="weather-info">
-            <p id="city-name"></p>
-            <p id="temperature"></p>
-            <p id="weather-description"></p>
-            <p id="humidity"></p>  <!-- New -->
-            <p id="wind-speed"></p>  <!-- New -->
-            <img id="weather-icon" src="" alt="Weather Icon" style="display:none;" /> 
+        <div class="header">
+            <h1>Weather Forecast</h1>
+            <p>Get the latest weather updates for any city</p>
         </div>
         
-    </div>    
+        <div class="search-box">
+            <input type="text" placeholder="Enter city name" id="city-input">
+            <button id="search-btn">Search</button>
+        </div>
+        
+        <div class="loader" id="loader">
+            <div></div>
+            <div></div>
+            <div></div>
+        </div>
+        
+        <div class="main-weather">
+            <div class="location-info">
+                <h2 class="city">Weather in New York</h2>
+                <p class="date">Monday, March 19, 2025</p>
+            </div>
+            
+            <div class="weather-display">
+                <div class="temperature-container">
+                    <h1 class="temperature">23°C</h1>
+                    <p class="weather-description">Partly Cloudy</p>
+                </div>
+                <img src="/api/placeholder/100/100" alt="Weather Icon" class="weather-icon" id="weather-icon">
+            </div>
+            
+            <div class="details">
+                <div class="detail-item">
+                    <!-- <img src="/api/placeholder/40/40" alt="Humidity Icon"> -->
+                    <span class="detail-label">Humidity</span>
+                    <span class="detail-value" id="humidity">65%</span>
+                </div>
+                <div class="detail-item">
+                    <!-- <img src="/api/placeholder/40/40" alt="Wind Icon"> -->
+                    <span class="detail-label">Wind Speed</span>
+                    <span class="detail-value" id="wind-speed">5.7 km/h</span>
+                </div>
+            </div>
+        </div>
+        
+        <div class="forecast">
+            <h3>3-Day Forecast</h3>
+            <div class="forecast-container" id="forecast-container">
+                <!-- Forecast data will be added here -->
+            </div>
+        </div>
+        
+        <p class="error" id="error-message">City not found. Please try again.</p>
+    </div>
+
     <script src="../JS/script.js"></script>
 </body>
 </html>
