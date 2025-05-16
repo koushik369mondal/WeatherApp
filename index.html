@@ -22,6 +22,21 @@
             </button>
         </div>
         
+        <div class="coord-search">
+            <div class="coord-inputs">
+                <div class="coord-group">
+                    <label for="lat-input">Latitude</label>
+                    <input type="number" step="0.000001" placeholder="e.g. 40.7128" id="lat-input">
+                </div>
+                <div class="coord-group">
+                    <label for="lon-input">Longitude</label>
+                    <input type="number" step="0.000001" placeholder="e.g. -74.0060" id="lon-input">
+                </div>
+            </div>
+            <button id="coords-search-btn" class="coords-btn">Search by Coordinates</button>
+            <button id="show-coords-btn" class="coords-btn coords-show-btn">Show Current Coordinates</button>
+        </div>
+        
         <div class="loader" id="loader">
             <div></div>
             <div></div>

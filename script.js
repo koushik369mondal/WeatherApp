@@ -12,6 +12,14 @@ const forecastContainer = document.getElementById('forecast-container');
 const errorMessage = document.getElementById('error-message');
 const loader = document.getElementById('loader');
 const locateBtn = document.getElementById('locate-btn');
+const latInput = document.getElementById('lat-input');
+const lonInput = document.getElementById('lon-input');
+const coordsSearchBtn = document.getElementById('coords-search-btn');
+const showCoordsBtn = document.getElementById('show-coords-btn');
+
+// Variables to store the current coordinates
+let currentLat = null;
+let currentLon = null;
 
 // Function to format date
 function formatDate(date) {
@@ -38,11 +46,11 @@ async function getWeatherData(city) {
     showLoader();
     try {
         const response = await fetch(`https://api.openweathermap.org/data/2.5/weather?q=${city}&units=metric&appid=${apiKey}`);
-
+        
         if (!response.ok) {
             throw new Error("City not found");
         }
-
+        
         const data = await response.json();
         updateWeatherUI(data);
         getForecastData(city);
@@ -57,12 +65,16 @@ async function getWeatherData(city) {
 async function getWeatherByCoords(lat, lon) {
     showLoader();
     try {
+        // Store the current coordinates
+        currentLat = lat;
+        currentLon = lon;
+        
         const response = await fetch(`https://api.openweathermap.org/data/2.5/weather?lat=${lat}&lon=${lon}&units=metric&appid=${apiKey}`);
-
+        
         if (!response.ok) {
             throw new Error("Weather data not available");
         }
-
+        
         const data = await response.json();
         updateWeatherUI(data);
         getForecastByCoords(lat, lon);
@@ -75,16 +87,24 @@ async function getWeatherByCoords(lat, lon) {
 
 // Function to update UI with weather data
 function updateWeatherUI(data) {
-    cityName.textContent = `${data.name}, ${data.sys.country}`;
+    // Format the city name, including coordinates when available
+    let locationText = `${data.name}, ${data.sys.country}`;
+    
+    // If we're using coordinates and they're stored, show them in the UI
+    if (currentLat !== null && currentLon !== null) {
+        locationText += ` (${currentLat.toFixed(4)}, ${currentLon.toFixed(4)})`;
+    }
+    
+    cityName.textContent = locationText;
     temperature.textContent = `${Math.round(data.main.temp)}°C`;
     weatherDescription.textContent = data.weather[0].description;
     humidity.textContent = `${data.main.humidity}%`;
     windSpeed.textContent = `${data.wind.speed} km/h`;
-
+    
     // Set weather icon
     const iconCode = data.weather[0].icon;
     weatherIcon.src = `https://openweathermap.org/img/wn/${iconCode}@2x.png`;
-
+    
     // Hide error message if it was shown
     errorMessage.style.display = 'none';
 }
@@ -93,11 +113,11 @@ function updateWeatherUI(data) {
 async function getForecastData(city) {
     try {
         const response = await fetch(`https://api.openweathermap.org/data/2.5/forecast?q=${city}&units=metric&appid=${apiKey}`);
-
+        
         if (!response.ok) {
             throw new Error("Forecast data not available");
         }
-
+        
         const data = await response.json();
         updateForecastUI(data);
     } catch (error) {
@@ -110,11 +130,11 @@ async function getForecastData(city) {
 async function getForecastByCoords(lat, lon) {
     try {
         const response = await fetch(`https://api.openweathermap.org/data/2.5/forecast?lat=${lat}&lon=${lon}&units=metric&appid=${apiKey}`);
-
+        
         if (!response.ok) {
             throw new Error("Forecast data not available");
         }
-
+        
         const data = await response.json();
         updateForecastUI(data);
     } catch (error) {
@@ -127,41 +147,41 @@ async function getForecastByCoords(lat, lon) {
 function updateForecastUI(data) {
     // Clear previous forecast data
     forecastContainer.innerHTML = '';
-
+    
     // Get forecast for the next 3 days (at noon)
     const forecastDays = {};
     const currentDate = new Date().getDate();
-
+    
     data.list.forEach(item => {
         const date = new Date(item.dt * 1000);
         const day = date.getDate();
-
+        
         // Skip current day and only take data for noon (around 12:00)
         if (day !== currentDate && !forecastDays[day] && date.getHours() >= 11 && date.getHours() <= 13) {
             forecastDays[day] = item;
         }
     });
-
+    
     // Take only the first 3 days
     Object.values(forecastDays).slice(0, 3).forEach(day => {
         const date = new Date(day.dt * 1000);
         const temp = Math.round(day.main.temp);
         const description = day.weather[0].description;
         const iconCode = day.weather[0].icon;
-
+        
         const forecastDay = document.createElement('div');
         forecastDay.className = 'forecast-day';
-
+        
         forecastDay.innerHTML = `
             <p class="forecast-date">${date.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}</p>
             <img src="https://openweathermap.org/img/wn/${iconCode}.png" alt="Weather Icon" class="forecast-icon">
             <p class="forecast-temp">${temp}°C</p>
             <p class="forecast-desc">${description}</p>
         `;
-
+        
         forecastContainer.appendChild(forecastDay);
     });
-
+    
     hideLoader();
 }
 
@@ -174,6 +194,11 @@ function getUserLocation() {
             (position) => {
                 const lat = position.coords.latitude;
                 const lon = position.coords.longitude;
+                
+                // Update the input fields with the coordinates
+                latInput.value = lat.toFixed(6);
+                lonInput.value = lon.toFixed(6);
+                
                 getWeatherByCoords(lat, lon);
             },
             // Error callback
@@ -201,6 +226,45 @@ function getUserLocation() {
     }
 }
 
+// Function to display current coordinates
+function showCurrentCoordinates() {
+    if (currentLat !== null && currentLon !== null) {
+        latInput.value = currentLat.toFixed(6);
+        lonInput.value = currentLon.toFixed(6);
+        
+        // Flash the fields to indicate they've been updated
+        [latInput, lonInput].forEach(input => {
+            input.style.backgroundColor = "#d0f0c0";
+            setTimeout(() => {
+                input.style.backgroundColor = "";
+            }, 800);
+        });
+    } else {
+        // If no coordinates are stored, try to get them
+        getUserLocation();
+    }
+}
+
+// Function to validate coordinates
+function validateCoordinates(lat, lon) {
+    // Check if both values are numbers
+    if (isNaN(lat) || isNaN(lon)) {
+        return false;
+    }
+    
+    // Check latitude range (-90 to 90)
+    if (lat < -90 || lat > 90) {
+        return false;
+    }
+    
+    // Check longitude range (-180 to 180)
+    if (lon < -180 || lon > 180) {
+        return false;
+    }
+    
+    return true;
+}
+
 // Event listeners
 searchBtn.addEventListener('click', () => {
     const city = cityInput.value.trim();
@@ -219,6 +283,31 @@ cityInput.addEventListener('keypress', (event) => {
 });
 
 locateBtn.addEventListener('click', getUserLocation);
+
+// Event listener for coordinates search button
+coordsSearchBtn.addEventListener('click', () => {
+    const lat = parseFloat(latInput.value);
+    const lon = parseFloat(lonInput.value);
+    
+    if (validateCoordinates(lat, lon)) {
+        getWeatherByCoords(lat, lon);
+    } else {
+        errorMessage.textContent = "Invalid coordinates. Latitude must be between -90 and 90, and longitude between -180 and 180.";
+        errorMessage.style.display = 'block';
+    }
+});
+
+// Event listener for coordinate inputs
+[latInput, lonInput].forEach(input => {
+    input.addEventListener('keypress', (event) => {
+        if (event.key === 'Enter') {
+            coordsSearchBtn.click();
+        }
+    });
+});
+
+// Event listener for show coordinates button
+showCoordsBtn.addEventListener('click', showCurrentCoordinates);
 
 // On load, try to get user's location
 window.addEventListener('load', () => {
