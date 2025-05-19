@@ -2,7 +2,7 @@
     margin: 0;
     padding: 0;
     box-sizing: border-box;
-    font-family: 'Poppins', 'Arial', sans-serif;
+    font-family: "Poppins", "Arial", sans-serif;
 }
 
 body {
@@ -189,7 +189,9 @@ body {
     display: flex;
     flex-direction: column;
     align-items: center;
-    background: linear-gradient(135deg, rgba(255, 255, 255, 0.7), rgba(255, 255, 255, 0.3));
+    background: linear-gradient(135deg,
+            rgba(255, 255, 255, 0.7),
+            rgba(255, 255, 255, 0.3));
     border-radius: 20px;
     padding: 30px;
     margin-bottom: 30px;
@@ -314,7 +316,9 @@ body {
 }
 
 .forecast-day {
-    background: linear-gradient(135deg, rgba(255, 255, 255, 0.7), rgba(255, 255, 255, 0.3));
+    background: linear-gradient(135deg,
+            rgba(255, 255, 255, 0.7),
+            rgba(255, 255, 255, 0.3));
     border-radius: 16px;
     padding: 20px;
     text-align: center;
@@ -525,7 +529,7 @@ body {
 }
 
 .shake {
-    animation: shake 0.5s cubic-bezier(.36, .07, .19, .97) both;
+    animation: shake 0.5s cubic-bezier(0.36, 0.07, 0.19, 0.97) both;
 }
 
 /* Network status indicator */

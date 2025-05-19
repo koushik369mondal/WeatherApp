@@ -2,10 +2,10 @@
 <html lang="en">
 
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Weather App</title>
-    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="style.css" />
 </head>
 
 <body>
@@ -16,7 +16,7 @@
         </div>
 
         <div class="search-box">
-            <input type="text" placeholder="Enter city name" id="city-input">
+            <input type="text" placeholder="Enter city name" id="city-input" />
             <button id="search-btn">Search</button>
             <button id="locate-btn" class="locate-btn">
                 <span class="location-icon">📍</span>
@@ -28,15 +28,19 @@
             <div class="coord-inputs">
                 <div class="coord-group">
                     <label for="lat-input">Latitude</label>
-                    <input type="number" step="0.000001" placeholder="e.g. 40.7128" id="lat-input">
+                    <input type="number" step="0.000001" placeholder="e.g. 40.7128" id="lat-input" />
                 </div>
                 <div class="coord-group">
                     <label for="lon-input">Longitude</label>
-                    <input type="number" step="0.000001" placeholder="e.g. -74.0060" id="lon-input">
+                    <input type="number" step="0.000001" placeholder="e.g. -74.0060" id="lon-input" />
                 </div>
             </div>
-            <button id="coords-search-btn" class="coords-btn">Search by Coordinates</button>
-            <button id="show-coords-btn" class="coords-btn coords-show-btn">Show Current Coordinates</button>
+            <button id="coords-search-btn" class="coords-btn">
+                Search by Coordinates
+            </button>
+            <button id="show-coords-btn" class="coords-btn coords-show-btn">
+                Show Current Coordinates
+            </button>
         </div>
 
         <div class="loader" id="loader">
@@ -56,7 +60,7 @@
                     <h1 class="temperature">23°C</h1>
                     <p class="weather-description">Partly Cloudy</p>
                 </div>
-                <img src="/api/placeholder/100/100" alt="Weather Icon" class="weather-icon" id="weather-icon">
+                <img src="/api/placeholder/100/100" alt="Weather Icon" class="weather-icon" id="weather-icon" />
             </div>
 
             <div class="details">
@@ -93,26 +97,26 @@
     <!-- Add the following script to initialize the network status indicator -->
     <script>
         // Network status indicator setup
-        const networkStatus = document.getElementById('network-status');
-        const statusIcon = document.getElementById('status-icon');
-        const statusText = document.getElementById('status-text');
+        const networkStatus = document.getElementById("network-status");
+        const statusIcon = document.getElementById("status-icon");
+        const statusText = document.getElementById("status-text");
 
         function updateNetworkStatus() {
             if (navigator.onLine) {
-                networkStatus.className = 'network-status online';
-                statusIcon.textContent = '📶';
-                statusText.textContent = 'Online';
+                networkStatus.className = "network-status online";
+                statusIcon.textContent = "📶";
+                statusText.textContent = "Online";
 
                 // Show the status briefly then fade out
-                networkStatus.style.display = 'flex';
+                networkStatus.style.display = "flex";
                 setTimeout(() => {
-                    networkStatus.style.display = 'none';
+                    networkStatus.style.display = "none";
                 }, 3000);
             } else {
-                networkStatus.className = 'network-status offline';
-                statusIcon.textContent = '📡';
-                statusText.textContent = 'Offline';
-                networkStatus.style.display = 'flex';
+                networkStatus.className = "network-status offline";
+                statusIcon.textContent = "📡";
+                statusText.textContent = "Offline";
+                networkStatus.style.display = "flex";
             }
         }
 
@@ -120,11 +124,11 @@
         updateNetworkStatus();
 
         // Listen for changes
-        window.addEventListener('online', () => {
+        window.addEventListener("online", () => {
             updateNetworkStatus();
         });
 
-        window.addEventListener('offline', () => {
+        window.addEventListener("offline", () => {
             updateNetworkStatus();
         });
     </script>
