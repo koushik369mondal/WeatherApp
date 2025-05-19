@@ -464,3 +464,69 @@ body {
         padding: 10px;
     }
 }
+
+/* Add this to the style.css file */
+
+/* Enhanced error styling */
+.error {
+    display: none;
+    text-align: center;
+    color: #ff3333;
+    font-size: 16px;
+    margin-top: 20px;
+    padding: 15px;
+    background-color: rgba(255, 51, 51, 0.1);
+    border-radius: 10px;
+    border-left: 4px solid #ff3333;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+/* Error message shake animation */
+@keyframes shake {
+    0%, 100% { transform: translateX(0); }
+    10%, 30%, 50%, 70%, 90% { transform: translateX(-5px); }
+    20%, 40%, 60%, 80% { transform: translateX(5px); }
+}
+
+.shake {
+    animation: shake 0.5s cubic-bezier(.36,.07,.19,.97) both;
+}
+
+/* Network status indicator */
+.network-status {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    padding: 10px 15px;
+    border-radius: 50px;
+    font-size: 14px;
+    font-weight: 600;
+    display: none;
+    align-items: center;
+    gap: 8px;
+    z-index: 1000;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+    transition: all 0.3s ease;
+}
+
+.network-status.online {
+    background-color: rgba(67, 233, 123, 0.9);
+    color: #fff;
+}
+
+.network-status.offline {
+    background-color: rgba(255, 51, 51, 0.9);
+    color: #fff;
+}
+
+/* Forecast error styling */
+.forecast-error {
+    text-align: center;
+    color: #ff9966;
+    font-size: 16px;
+    padding: 20px;
+    background-color: rgba(255, 153, 102, 0.1);
+    border-radius: 10px;
+    margin: 10px 0;
+}

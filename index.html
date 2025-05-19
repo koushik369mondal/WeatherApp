@@ -81,6 +81,52 @@
         <p class="error" id="error-message">City not found. Please try again.</p>
     </div>
 
+    <!-- Add this to the index.html file, right before the closing body tag -->
+
+<div class="network-status" id="network-status">
+    <span id="status-icon">📶</span>
+    <span id="status-text">Online</span>
+</div>
+
+<!-- Add the following script to initialize the network status indicator -->
+<script>
+    // Network status indicator setup
+    const networkStatus = document.getElementById('network-status');
+    const statusIcon = document.getElementById('status-icon');
+    const statusText = document.getElementById('status-text');
+    
+    function updateNetworkStatus() {
+        if (navigator.onLine) {
+            networkStatus.className = 'network-status online';
+            statusIcon.textContent = '📶';
+            statusText.textContent = 'Online';
+            
+            // Show the status briefly then fade out
+            networkStatus.style.display = 'flex';
+            setTimeout(() => {
+                networkStatus.style.display = 'none';
+            }, 3000);
+        } else {
+            networkStatus.className = 'network-status offline';
+            statusIcon.textContent = '📡';
+            statusText.textContent = 'Offline';
+            networkStatus.style.display = 'flex';
+        }
+    }
+    
+    // Initial check
+    updateNetworkStatus();
+    
+    // Listen for changes
+    window.addEventListener('online', () => {
+        updateNetworkStatus();
+    });
+    
+    window.addEventListener('offline', () => {
+        updateNetworkStatus();
+    });
+</script>
+
     <script src="script.js"></script>
 </body>
 </html>
