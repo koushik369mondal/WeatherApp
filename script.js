@@ -17,9 +17,18 @@ const lonInput = document.getElementById("lon-input");
 const coordsSearchBtn = document.getElementById("coords-search-btn");
 const showCoordsBtn = document.getElementById("show-coords-btn");
 
+// New features - Unit Toggle and Refresh Button
+const unitToggle = document.getElementById("unit-toggle");
+const refreshBtn = document.getElementById("refresh-btn");
+
 // Variables to store the current coordinates
 let currentLat = null;
 let currentLon = null;
+
+// Variables to store current weather data
+let currentWeatherData = null;
+let currentForecastData = null;
+let currentUnit = "metric"; // Default to metric (Celsius)
 
 // Function to format date
 function formatDate(date) {
@@ -64,6 +73,28 @@ function showError(message) {
     }, 5000);
 }
 
+// Function to convert between Celsius and Fahrenheit
+function convertTemperature(temp, toUnit) {
+    if (toUnit === "imperial") {
+        // Convert from Celsius to Fahrenheit
+        return (temp * 9/5) + 32;
+    } else {
+        // Convert from Fahrenheit to Celsius
+        return (temp - 32) * 5/9;
+    }
+}
+
+// Function to convert wind speed
+function convertWindSpeed(speed, toUnit) {
+    if (toUnit === "imperial") {
+        // Convert from km/h to mph
+        return speed * 0.621371;
+    } else {
+        // Convert from mph to km/h
+        return speed / 0.621371;
+    }
+}
+
 // Function to get weather data by city name
 async function getWeatherData(city) {
     if (!city || city.trim() === "") {
@@ -76,7 +107,7 @@ async function getWeatherData(city) {
         const response = await fetch(
             `https://api.openweathermap.org/data/2.5/weather?q=${encodeURIComponent(
                 city
-            )}&units=metric&appid=${apiKey}`
+            )}&units=${currentUnit}&appid=${apiKey}`
         );
 
         if (response.status === 404) {
@@ -92,6 +123,7 @@ async function getWeatherData(city) {
         }
 
         const data = await response.json();
+        currentWeatherData = data; // Store current weather data
         updateWeatherUI(data);
         getForecastData(city);
 
@@ -117,7 +149,7 @@ async function getWeatherByCoords(lat, lon) {
         currentLon = lon;
 
         const response = await fetch(
-            `https://api.openweathermap.org/data/2.5/weather?lat=${lat}&lon=${lon}&units=metric&appid=${apiKey}`
+            `https://api.openweathermap.org/data/2.5/weather?lat=${lat}&lon=${lon}&units=${currentUnit}&appid=${apiKey}`
         );
 
         if (response.status === 400) {
@@ -131,6 +163,7 @@ async function getWeatherByCoords(lat, lon) {
         }
 
         const data = await response.json();
+        currentWeatherData = data; // Store current weather data
         updateWeatherUI(data);
         getForecastByCoords(lat, lon);
 
@@ -160,10 +193,17 @@ function updateWeatherUI(data) {
         }
 
         cityName.textContent = locationText;
-        temperature.textContent = `${Math.round(data.main.temp)}°C`;
+        
+        // Update temperature with current unit
+        const tempUnit = currentUnit === "metric" ? "°C" : "°F";
+        temperature.textContent = `${Math.round(data.main.temp)}${tempUnit}`;
+        
         weatherDescription.textContent = data.weather[0]?.description || "Unknown";
         humidity.textContent = `${data.main.humidity}%`;
-        windSpeed.textContent = `${data.wind.speed} km/h`;
+        
+        // Update wind speed with current unit
+        const windUnit = currentUnit === "metric" ? "km/h" : "mph";
+        windSpeed.textContent = `${data.wind.speed.toFixed(1)} ${windUnit}`;
 
         // Set weather icon
         const iconCode = data.weather[0]?.icon || "50d"; // Default to mist icon if missing
@@ -188,7 +228,7 @@ async function getForecastData(city) {
         const response = await fetch(
             `https://api.openweathermap.org/data/2.5/forecast?q=${encodeURIComponent(
                 city
-            )}&units=metric&appid=${apiKey}`
+            )}&units=${currentUnit}&appid=${apiKey}`
         );
 
         if (!response.ok) {
@@ -196,6 +236,7 @@ async function getForecastData(city) {
         }
 
         const data = await response.json();
+        currentForecastData = data; // Store current forecast data
         updateForecastUI(data);
     } catch (error) {
         console.error("Error fetching forecast data:", error);
@@ -209,7 +250,7 @@ async function getForecastData(city) {
 async function getForecastByCoords(lat, lon) {
     try {
         const response = await fetch(
-            `https://api.openweathermap.org/data/2.5/forecast?lat=${lat}&lon=${lon}&units=metric&appid=${apiKey}`
+            `https://api.openweathermap.org/data/2.5/forecast?lat=${lat}&lon=${lon}&units=${currentUnit}&appid=${apiKey}`
         );
 
         if (!response.ok) {
@@ -217,6 +258,7 @@ async function getForecastByCoords(lat, lon) {
         }
 
         const data = await response.json();
+        currentForecastData = data; // Store current forecast data
         updateForecastUI(data);
     } catch (error) {
         console.error("Error fetching forecast data:", error);
@@ -285,6 +327,9 @@ function updateForecastUI(data) {
             return;
         }
 
+        // Get the temperature unit
+        const tempUnit = currentUnit === "metric" ? "°C" : "°F";
+
         forecastItems.forEach((day) => {
             const date = new Date(day.dt * 1000);
             const temp = Math.round(day.main.temp);
@@ -301,7 +346,7 @@ function updateForecastUI(data) {
                 day: "numeric",
             })}</p>
                 <img src="https://openweathermap.org/img/wn/${iconCode}.png" alt="Weather Icon" class="forecast-icon" onerror="this.src='/api/placeholder/60/60'; this.alt='Icon unavailable';">
-                <p class="forecast-temp">${temp}°C</p>
+                <p class="forecast-temp">${temp}${tempUnit}</p>
                 <p class="forecast-desc">${description}</p>
             `;
 
@@ -313,6 +358,59 @@ function updateForecastUI(data) {
             '<p class="forecast-error">Error displaying forecast</p>';
     } finally {
         hideLoader();
+    }
+}
+
+// Function to refresh the weather data
+function refreshWeatherData() {
+    showLoader();
+    
+    // Create animation effect for refresh button
+    const refreshIcon = refreshBtn.querySelector('.refresh-icon');
+    refreshIcon.style.transition = 'transform 0.5s ease-in-out';
+    refreshIcon.style.transform = 'rotate(360deg)';
+    
+    setTimeout(() => {
+        refreshIcon.style.transform = 'rotate(0deg)';
+    }, 500);
+    
+    // Check which source to use for refreshing
+    if (currentLat !== null && currentLon !== null) {
+        // Refresh using coordinates
+        getWeatherByCoords(currentLat, currentLon);
+    } else {
+        // Try to use city name
+        const lastCity = localStorage.getItem("lastCity");
+        if (lastCity) {
+            getWeatherData(lastCity);
+        } else {
+            // If no data available, try geolocation
+            getUserLocation();
+        }
+    }
+}
+
+// Function to toggle temperature units
+function toggleTemperatureUnit() {
+    // Update current unit based on toggle state
+    currentUnit = unitToggle.checked ? "imperial" : "metric";
+    
+    // Save preference to localStorage
+    localStorage.setItem("preferredUnit", currentUnit);
+    
+    // If we have weather data, update the UI without fetching new data
+    if (currentWeatherData) {
+        // If we already have temperature data for the current units, just update the UI
+        if (currentLat !== null && currentLon !== null) {
+            // Refresh using coordinates with new unit
+            getWeatherByCoords(currentLat, currentLon);
+        } else {
+            // Refresh using city name with new unit
+            const lastCity = localStorage.getItem("lastCity");
+            if (lastCity) {
+                getWeatherData(lastCity);
+            }
+        }
     }
 }
 
@@ -450,8 +548,18 @@ function validateCoordinates(lat, lon) {
 
 // Function to handle network errors
 function handleNetworkErrors() {
+    const networkStatus = document.getElementById("network-status");
+    const statusIcon = document.getElementById("status-icon");
+    const statusText = document.getElementById("status-text");
+
     window.addEventListener("online", () => {
         // When connection is restored
+        networkStatus.classList.remove("offline");
+        networkStatus.classList.add("online");
+        statusIcon.textContent = "📶";
+        statusText.textContent = "Online";
+        
+        // Refresh data
         const lastCity = localStorage.getItem("lastCity");
         if (lastCity) {
             getWeatherData(lastCity);
@@ -461,6 +569,11 @@ function handleNetworkErrors() {
     });
 
     window.addEventListener("offline", () => {
+        networkStatus.classList.remove("online");
+        networkStatus.classList.add("offline");
+        statusIcon.textContent = "❌";
+        statusText.textContent = "Offline";
+        
         showError("You're offline. Please check your internet connection.");
     });
 }
@@ -520,11 +633,25 @@ coordsSearchBtn.addEventListener("click", () => {
 // Event listener for show coordinates button
 showCoordsBtn.addEventListener("click", showCurrentCoordinates);
 
+// NEW FEATURE: Event listener for refresh button
+refreshBtn.addEventListener("click", refreshWeatherData);
+
+// NEW FEATURE: Event listener for unit toggle
+unitToggle.addEventListener("change", toggleTemperatureUnit);
+
 // Setup network error handling
 handleNetworkErrors();
 
 // On load, try to get user's location or use last successful search
 window.addEventListener("load", () => {
+    // Load preferred unit from localStorage
+    const preferredUnit = localStorage.getItem("preferredUnit");
+    if (preferredUnit) {
+        currentUnit = preferredUnit;
+        // Update toggle based on stored preference
+        unitToggle.checked = preferredUnit === "imperial";
+    }
+
     // First check if we have a stored location
     const lastCity = localStorage.getItem("lastCity");
     const lastLat = localStorage.getItem("lastLat");

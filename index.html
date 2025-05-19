@@ -1,139 +1,104 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Weather App</title>
-    <link rel="stylesheet" href="style.css" />
+    <link rel="stylesheet" href="style.css">
 </head>
-
 <body>
     <div class="container">
         <div class="header">
             <h1>Weather Forecast</h1>
             <p>Get the latest weather updates for any city</p>
         </div>
-
+        
         <div class="search-box">
-            <input type="text" placeholder="Enter city name" id="city-input" />
-            <button id="search-btn">Search</button>
-            <button id="locate-btn" class="locate-btn">
-                <span class="location-icon">📍</span>
+            <input type="text" placeholder="Enter city name" id="city-input">
+            <button id="search-btn" class="primary-btn">Search</button>
+            <button id="locate-btn" class="primary-btn">
+                <span class="btn-icon">📍</span>
                 Use My Location
             </button>
         </div>
-
+        
+        <div class="controls">
+            <div class="unit-toggle">
+                <span class="unit-label">°C</span>
+                <label class="switch">
+                    <input type="checkbox" id="unit-toggle">
+                    <span class="slider round"></span>
+                </label>
+                <span class="unit-label">°F</span>
+            </div>
+            <button id="refresh-btn" class="primary-btn">
+                <span class="btn-icon refresh-icon">🔄</span>
+                Refresh
+            </button>
+        </div>
+        
         <div class="coord-search">
             <div class="coord-inputs">
                 <div class="coord-group">
                     <label for="lat-input">Latitude</label>
-                    <input type="number" step="0.000001" placeholder="e.g. 40.7128" id="lat-input" />
+                    <input type="number" step="0.000001" placeholder="e.g. 40.7128" id="lat-input">
                 </div>
                 <div class="coord-group">
                     <label for="lon-input">Longitude</label>
-                    <input type="number" step="0.000001" placeholder="e.g. -74.0060" id="lon-input" />
+                    <input type="number" step="0.000001" placeholder="e.g. -74.0060" id="lon-input">
                 </div>
             </div>
-            <button id="coords-search-btn" class="coords-btn">
-                Search by Coordinates
-            </button>
-            <button id="show-coords-btn" class="coords-btn coords-show-btn">
-                Show Current Coordinates
-            </button>
+            <button id="coords-search-btn" class="primary-btn">Search by Coordinates</button>
+            <button id="show-coords-btn" class="primary-btn">Show Current Coordinates</button>
         </div>
-
+        
         <div class="loader" id="loader">
             <div></div>
             <div></div>
             <div></div>
         </div>
-
+        
         <div class="main-weather">
             <div class="location-info">
                 <h2 class="city">Weather in New York</h2>
                 <p class="date">Monday, March 19, 2025</p>
             </div>
-
+            
             <div class="weather-display">
                 <div class="temperature-container">
                     <h1 class="temperature">23°C</h1>
                     <p class="weather-description">Partly Cloudy</p>
                 </div>
-                <img src="/api/placeholder/100/100" alt="Weather Icon" class="weather-icon" id="weather-icon" />
+                <img src="/api/placeholder/100/100" alt="Weather Icon" class="weather-icon" id="weather-icon">
             </div>
-
+            
             <div class="details">
                 <div class="detail-item">
-                    <!-- <img src="/api/placeholder/40/40" alt="Humidity Icon"> -->
                     <span class="detail-label">Humidity</span>
                     <span class="detail-value" id="humidity">65%</span>
                 </div>
                 <div class="detail-item">
-                    <!-- <img src="/api/placeholder/40/40" alt="Wind Icon"> -->
                     <span class="detail-label">Wind Speed</span>
                     <span class="detail-value" id="wind-speed">5.7 km/h</span>
                 </div>
             </div>
         </div>
-
+        
         <div class="forecast">
             <h3>3-Day Forecast</h3>
             <div class="forecast-container" id="forecast-container">
                 <!-- Forecast data will be added here -->
             </div>
         </div>
-
+        
         <p class="error" id="error-message">City not found. Please try again.</p>
     </div>
-
-    <!-- Add this to the index.html file, right before the closing body tag -->
 
     <div class="network-status" id="network-status">
         <span id="status-icon">📶</span>
         <span id="status-text">Online</span>
     </div>
 
-    <!-- Add the following script to initialize the network status indicator -->
-    <script>
-        // Network status indicator setup
-        const networkStatus = document.getElementById("network-status");
-        const statusIcon = document.getElementById("status-icon");
-        const statusText = document.getElementById("status-text");
-
-        function updateNetworkStatus() {
-            if (navigator.onLine) {
-                networkStatus.className = "network-status online";
-                statusIcon.textContent = "📶";
-                statusText.textContent = "Online";
-
-                // Show the status briefly then fade out
-                networkStatus.style.display = "flex";
-                setTimeout(() => {
-                    networkStatus.style.display = "none";
-                }, 3000);
-            } else {
-                networkStatus.className = "network-status offline";
-                statusIcon.textContent = "📡";
-                statusText.textContent = "Offline";
-                networkStatus.style.display = "flex";
-            }
-        }
-
-        // Initial check
-        updateNetworkStatus();
-
-        // Listen for changes
-        window.addEventListener("online", () => {
-            updateNetworkStatus();
-        });
-
-        window.addEventListener("offline", () => {
-            updateNetworkStatus();
-        });
-    </script>
-
     <script src="script.js"></script>
 </body>
-
 </html>
