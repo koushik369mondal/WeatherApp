@@ -77,10 +77,10 @@ function showError(message) {
 function convertTemperature(temp, toUnit) {
     if (toUnit === "imperial") {
         // Convert from Celsius to Fahrenheit
-        return (temp * 9/5) + 32;
+        return (temp * 9 / 5) + 32;
     } else {
         // Convert from Fahrenheit to Celsius
-        return (temp - 32) * 5/9;
+        return (temp - 32) * 5 / 9;
     }
 }
 
@@ -193,14 +193,14 @@ function updateWeatherUI(data) {
         }
 
         cityName.textContent = locationText;
-        
+
         // Update temperature with current unit
         const tempUnit = currentUnit === "metric" ? "°C" : "°F";
         temperature.textContent = `${Math.round(data.main.temp)}${tempUnit}`;
-        
+
         weatherDescription.textContent = data.weather[0]?.description || "Unknown";
         humidity.textContent = `${data.main.humidity}%`;
-        
+
         // Update wind speed with current unit
         const windUnit = currentUnit === "metric" ? "km/h" : "mph";
         windSpeed.textContent = `${data.wind.speed.toFixed(1)} ${windUnit}`;
@@ -364,16 +364,16 @@ function updateForecastUI(data) {
 // Function to refresh the weather data
 function refreshWeatherData() {
     showLoader();
-    
+
     // Create animation effect for refresh button
     const refreshIcon = refreshBtn.querySelector('.refresh-icon');
     refreshIcon.style.transition = 'transform 0.5s ease-in-out';
     refreshIcon.style.transform = 'rotate(360deg)';
-    
+
     setTimeout(() => {
         refreshIcon.style.transform = 'rotate(0deg)';
     }, 500);
-    
+
     // Check which source to use for refreshing
     if (currentLat !== null && currentLon !== null) {
         // Refresh using coordinates
@@ -394,10 +394,10 @@ function refreshWeatherData() {
 function toggleTemperatureUnit() {
     // Update current unit based on toggle state
     currentUnit = unitToggle.checked ? "imperial" : "metric";
-    
+
     // Save preference to localStorage
     localStorage.setItem("preferredUnit", currentUnit);
-    
+
     // If we have weather data, update the UI without fetching new data
     if (currentWeatherData) {
         // If we already have temperature data for the current units, just update the UI
@@ -558,7 +558,7 @@ function handleNetworkErrors() {
         networkStatus.classList.add("online");
         statusIcon.textContent = "📶";
         statusText.textContent = "Online";
-        
+
         // Refresh data
         const lastCity = localStorage.getItem("lastCity");
         if (lastCity) {
@@ -573,7 +573,7 @@ function handleNetworkErrors() {
         networkStatus.classList.add("offline");
         statusIcon.textContent = "❌";
         statusText.textContent = "Offline";
-        
+
         showError("You're offline. Please check your internet connection.");
     });
 }

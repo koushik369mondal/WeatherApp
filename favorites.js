@@ -33,12 +33,12 @@ function saveFavorites() {
 // Update favorites UI in the main interface
 function updateFavoritesUI() {
     favoritesContainer.innerHTML = '';
-    
+
     if (favorites.length === 0) {
         noFavoritesMessage.style.display = 'block';
     } else {
         noFavoritesMessage.style.display = 'none';
-        
+
         favorites.forEach(city => {
             const favoriteButton = document.createElement('div');
             favoriteButton.className = 'favorite-city';
@@ -54,7 +54,7 @@ function updateFavoritesUI() {
 // Update favorites list in the modal
 function updateFavoritesListUI() {
     favoritesList.innerHTML = '';
-    
+
     if (favorites.length === 0) {
         favoritesList.style.display = 'none';
         noFavorites.style.display = 'block';
@@ -62,7 +62,7 @@ function updateFavoritesListUI() {
         favoritesList.style.display = 'block';
         favoritesList.classList.add('has-items');
         noFavorites.style.display = 'none';
-        
+
         favorites.forEach((city, index) => {
             const favoriteItem = document.createElement('div');
             favoriteItem.className = 'favorite-item';
@@ -74,7 +74,7 @@ function updateFavoritesListUI() {
             `;
             favoritesList.appendChild(favoriteItem);
         });
-        
+
         // Add event listeners for delete buttons
         document.querySelectorAll('.delete-favorite').forEach(btn => {
             btn.addEventListener('click', (e) => {
@@ -90,16 +90,16 @@ function addToFavorites() {
     // Only add if we have weather data
     if (currentWeatherData && currentWeatherData.name) {
         const cityName = currentWeatherData.name;
-        
+
         // Don't add duplicates
         if (!favorites.includes(cityName)) {
             favorites.push(cityName);
             saveFavorites();
-            
+
             // Show success feedback
             const originalText = addFavoriteBtn.innerHTML;
             addFavoriteBtn.innerHTML = '<span class="btn-icon">✅</span> Added!';
-            
+
             setTimeout(() => {
                 addFavoriteBtn.innerHTML = originalText;
             }, 2000);
@@ -107,7 +107,7 @@ function addToFavorites() {
             // Show already exists feedback
             const originalText = addFavoriteBtn.innerHTML;
             addFavoriteBtn.innerHTML = '<span class="btn-icon">⚠️</span> Already in Favorites';
-            
+
             setTimeout(() => {
                 addFavoriteBtn.innerHTML = originalText;
             }, 2000);
@@ -141,7 +141,7 @@ function clearAllFavorites() {
 function openModal() {
     updateFavoritesListUI();
     favoritesModal.style.display = 'block';
-    
+
     // Prevent scrolling of background
     document.body.style.overflow = 'hidden';
 }
@@ -149,7 +149,7 @@ function openModal() {
 // Close the favorites modal
 function closeModal() {
     favoritesModal.style.display = 'none';
-    
+
     // Re-enable scrolling
     document.body.style.overflow = 'auto';
 }

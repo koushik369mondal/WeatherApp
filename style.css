@@ -161,15 +161,15 @@ body {
     transition: .4s;
 }
 
-input:checked + .slider {
+input:checked+.slider {
     background-color: #4facfe;
 }
 
-input:focus + .slider {
+input:focus+.slider {
     box-shadow: 0 0 1px #4facfe;
 }
 
-input:checked + .slider:before {
+input:checked+.slider:before {
     transform: translateX(30px);
 }
 
@@ -191,8 +191,13 @@ input:checked + .slider:before {
 }
 
 @keyframes spin {
-    0% { transform: rotate(0deg); }
-    100% { transform: rotate(360deg); }
+    0% {
+        transform: rotate(0deg);
+    }
+
+    100% {
+        transform: rotate(360deg);
+    }
 }
 
 /* Coordinate search styling */
@@ -239,7 +244,8 @@ input:checked + .slider:before {
     box-shadow: 0 0 15px rgba(0, 0, 0, 0.1) inset;
 }
 
-#coords-search-btn, #show-coords-btn {
+#coords-search-btn,
+#show-coords-btn {
     width: 100%;
     margin-bottom: 10px;
 }
@@ -456,19 +462,44 @@ input:checked + .slider:before {
 }
 
 @keyframes loader {
-    0%, 80%, 100% { transform: scale(0); }
-    40% { transform: scale(1); }
+
+    0%,
+    80%,
+    100% {
+        transform: scale(0);
+    }
+
+    40% {
+        transform: scale(1);
+    }
 }
 
 /* Error message shake animation */
 @keyframes shake {
-    0%, 100% { transform: translateX(0); }
-    10%, 30%, 50%, 70%, 90% { transform: translateX(-5px); }
-    20%, 40%, 60%, 80% { transform: translateX(5px); }
+
+    0%,
+    100% {
+        transform: translateX(0);
+    }
+
+    10%,
+    30%,
+    50%,
+    70%,
+    90% {
+        transform: translateX(-5px);
+    }
+
+    20%,
+    40%,
+    60%,
+    80% {
+        transform: translateX(5px);
+    }
 }
 
 .shake {
-    animation: shake 0.5s cubic-bezier(.36,.07,.19,.97) both;
+    animation: shake 0.5s cubic-bezier(.36, .07, .19, .97) both;
 }
 
 /* Network status indicator */
@@ -514,46 +545,46 @@ input:checked + .slider:before {
     .container {
         padding: 20px;
     }
-    
+
     .controls {
         flex-direction: column;
         gap: 15px;
     }
-    
+
     .unit-toggle {
         width: 100%;
         justify-content: center;
     }
-    
+
     #refresh-btn {
         width: 100%;
     }
-    
+
     .coord-inputs {
         flex-direction: column;
         gap: 10px;
     }
-    
+
     .weather-display {
         flex-direction: column;
         gap: 15px;
     }
-    
+
     .details {
         flex-direction: column;
         align-items: center;
         gap: 15px;
     }
-    
+
     .detail-item {
         width: 100%;
         max-width: 200px;
     }
-    
+
     .forecast-container {
         gap: 10px;
     }
-    
+
     .forecast-day {
         min-width: 100px;
         padding: 15px;
@@ -564,34 +595,34 @@ input:checked + .slider:before {
     .container {
         padding: 15px;
     }
-    
-    .search-box {
+
+    /* .search-box {
         flex-direction: column;
-    }
-    
+    } */
+
     .search-box input {
         margin-bottom: 0;
         width: 100%;
     }
-    
+
     .search-box button {
         width: 100%;
         margin-left: 0;
     }
-    
+
     .city {
         font-size: 26px;
     }
-    
+
     .temperature {
         font-size: 50px;
     }
-    
+
     .weather-icon {
         width: 80px;
         height: 80px;
     }
-    
+
     .forecast-day {
         min-width: 90px;
         padding: 10px;
@@ -721,6 +752,7 @@ input:checked + .slider:before {
         opacity: 0;
         transform: translateY(-20px);
     }
+
     to {
         opacity: 1;
         transform: translateY(0);
@@ -852,7 +884,7 @@ input:checked + .slider:before {
     .favorites-controls {
         flex-direction: column;
     }
-    
+
     .modal-content {
         margin: 15% auto;
         padding: 20px;
