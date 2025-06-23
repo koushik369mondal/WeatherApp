@@ -1,4 +1,6 @@
 const apiKey = "92386185a97a841e8c25345a7b728ec3"; // Replace with your OpenWeatherMap API key
+
+// DOM Elements
 const cityInput = document.getElementById("city-input");
 const searchBtn = document.getElementById("search-btn");
 const cityName = document.querySelector(".city");
@@ -12,25 +14,24 @@ const forecastContainer = document.getElementById("forecast-container");
 const errorMessage = document.getElementById("error-message");
 const loader = document.getElementById("loader");
 const locateBtn = document.getElementById("locate-btn");
+
+// Enhanced features from first script
 const latInput = document.getElementById("lat-input");
 const lonInput = document.getElementById("lon-input");
 const coordsSearchBtn = document.getElementById("coords-search-btn");
 const showCoordsBtn = document.getElementById("show-coords-btn");
-
-// New features - Unit Toggle and Refresh Button
 const unitToggle = document.getElementById("unit-toggle");
 const refreshBtn = document.getElementById("refresh-btn");
 
-// Variables to store the current coordinates
+// State variables
 let currentLat = null;
 let currentLon = null;
-
-// Variables to store current weather data
 let currentWeatherData = null;
 let currentForecastData = null;
 let currentUnit = "metric"; // Default to metric (Celsius)
+let currentQuery = null; // Store last successful query
 
-// Function to format date
+// Utility Functions
 function formatDate(date) {
     const options = {
         weekday: "long",
@@ -41,618 +42,374 @@ function formatDate(date) {
     return date.toLocaleDateString("en-US", options);
 }
 
-// Update current date
-dateElement.textContent = formatDate(new Date());
-
-// Function to show loader
-function showLoader() {
-    loader.style.display = "block";
-    errorMessage.style.display = "none";
-}
-
-// Function to hide loader
-function hideLoader() {
-    loader.style.display = "none";
-}
-
-// Function to show error message
-function showError(message) {
-    hideLoader();
-    errorMessage.textContent = message;
-    errorMessage.style.display = "block";
-
-    // Shake the error message for attention
-    errorMessage.classList.add("shake");
-    setTimeout(() => {
-        errorMessage.classList.remove("shake");
-    }, 500);
-
-    // Hide error after 5 seconds
-    setTimeout(() => {
-        errorMessage.style.display = "none";
-    }, 5000);
-}
-
-// Function to convert between Celsius and Fahrenheit
 function convertTemperature(temp, toUnit) {
     if (toUnit === "imperial") {
-        // Convert from Celsius to Fahrenheit
         return (temp * 9 / 5) + 32;
     } else {
-        // Convert from Fahrenheit to Celsius
         return (temp - 32) * 5 / 9;
     }
 }
 
-// Function to convert wind speed
 function convertWindSpeed(speed, toUnit) {
     if (toUnit === "imperial") {
-        // Convert from km/h to mph
-        return speed * 0.621371;
+        return speed * 0.621371; // m/s to mph
     } else {
-        // Convert from mph to km/h
-        return speed / 0.621371;
+        return speed / 0.621371; // mph to m/s
     }
 }
 
-// Function to get weather data by city name
-async function getWeatherData(city) {
-    if (!city || city.trim() === "") {
-        showError("Please enter a city name");
-        return;
+function validateCoordinates(lat, lon) {
+    if (isNaN(lat) || isNaN(lon)) {
+        showError("Coordinates must be valid numbers");
+        return false;
+    }
+    if (lat < -90 || lat > 90) {
+        showError("Latitude must be between -90 and 90 degrees");
+        return false;
+    }
+    if (lon < -180 || lon > 180) {
+        showError("Longitude must be between -180 and 180 degrees");
+        return false;
+    }
+    return true;
+}
+
+// UI Functions
+function showLoader() {
+    if (loader) loader.style.display = "block";
+    if (errorMessage) errorMessage.style.display = "none";
+}
+
+function hideLoader() {
+    if (loader) loader.style.display = "none";
+}
+
+function showError(message) {
+    hideLoader();
+    if (errorMessage) {
+        errorMessage.textContent = message;
+        errorMessage.style.display = "block";
+
+        // Add shake animation if available
+        errorMessage.classList.add("shake");
+        setTimeout(() => {
+            errorMessage.classList.remove("shake");
+        }, 500);
+
+        // Auto-hide error after 5 seconds
+        setTimeout(() => {
+            errorMessage.style.display = "none";
+        }, 5000);
+    }
+    console.error("Weather App Error:", message);
+}
+
+// Enhanced input parsing function
+function parseSearchInput(input) {
+    const trimmedInput = input.trim();
+
+    // Check for coordinates (lat,lon format)
+    if (/^-?\d+(\.\d+)?\s*,\s*-?\d+(\.\d+)?$/.test(trimmedInput)) {
+        const [lat, lon] = trimmedInput.split(",").map(val => parseFloat(val.trim()));
+        if (validateCoordinates(lat, lon)) {
+            return { type: 'coords', lat, lon };
+        }
+        return null;
     }
 
-    showLoader();
+    // Check for Indian PIN code (5-6 digits)
+    if (/^\d{5,6}$/.test(trimmedInput)) {
+        return { type: 'zip', query: `zip=${trimmedInput},IN` };
+    }
+
+    // Check for international postal code with country
+    if (/^\d{5}\s*,\s*[A-Z]{2}$/i.test(trimmedInput)) {
+        const [zip, country] = trimmedInput.split(",").map(s => s.trim());
+        return { type: 'zip', query: `zip=${zip},${country.toUpperCase()}` };
+    }
+
+    // Default to city search
+    return { type: 'city', query: `q=${encodeURIComponent(trimmedInput)}` };
+}
+
+// Weather API Functions
+async function fetchWeatherData(url, errorContext) {
     try {
-        const response = await fetch(
-            `https://api.openweathermap.org/data/2.5/weather?q=${encodeURIComponent(
-                city
-            )}&units=${currentUnit}&appid=${apiKey}`
-        );
+        const response = await fetch(url);
 
         if (response.status === 404) {
-            throw new Error(
-                "City not found. Please check the spelling and try again."
-            );
+            throw new Error("Location not found. Please check your input and try again.");
         } else if (response.status === 401) {
-            throw new Error("API key error. Please check your API key.");
+            throw new Error("API key error. Please check your configuration.");
+        } else if (response.status === 429) {
+            throw new Error("Too many requests. Please wait a moment and try again.");
         } else if (!response.ok) {
-            throw new Error(
-                `Weather service error (${response.status}). Please try again later.`
-            );
+            throw new Error(`Weather service error (${response.status}). Please try again later.`);
         }
 
-        const data = await response.json();
-        currentWeatherData = data; // Store current weather data
-        updateWeatherUI(data);
-        getForecastData(city);
-
-        // Clear the error message if it was displayed
-        errorMessage.style.display = "none";
-
-        // Save the last successful search to localStorage
-        localStorage.setItem("lastCity", city);
+        return await response.json();
     } catch (error) {
-        showError(
-            error.message || "Failed to fetch weather data. Please try again."
-        );
-        console.error("Error fetching weather data:", error);
+        if (error.name === 'TypeError' && error.message.includes('fetch')) {
+            throw new Error("Network error. Please check your internet connection.");
+        }
+        throw error;
     }
 }
 
-// Function to get weather data by coordinates
+async function getWeatherByQuery(queryString) {
+    showLoader();
+    try {
+        currentQuery = queryString;
+
+        // Fetch current weather
+        const currentUrl = `https://api.openweathermap.org/data/2.5/weather?${queryString}&units=${currentUnit}&appid=${apiKey}`;
+        const currentData = await fetchWeatherData(currentUrl, "current weather");
+
+        currentWeatherData = currentData;
+        updateWeatherUI(currentData);
+
+        // Fetch forecast
+        const forecastUrl = `https://api.openweathermap.org/data/2.5/forecast?${queryString}&units=${currentUnit}&appid=${apiKey}`;
+        const forecastData = await fetchWeatherData(forecastUrl, "forecast");
+
+        currentForecastData = forecastData;
+        updateForecastUI(forecastData);
+
+        // Store successful search
+        if (queryString.startsWith('q=')) {
+            const cityName = queryString.replace('q=', '');
+            localStorage.setItem("lastCity", decodeURIComponent(cityName));
+        }
+
+        // Clear error message
+        if (errorMessage) errorMessage.style.display = "none";
+
+    } catch (error) {
+        showError(error.message || "Failed to fetch weather data. Please try again.");
+    }
+}
+
 async function getWeatherByCoords(lat, lon) {
     showLoader();
     try {
-        // Store the current coordinates
         currentLat = lat;
         currentLon = lon;
 
-        const response = await fetch(
-            `https://api.openweathermap.org/data/2.5/weather?lat=${lat}&lon=${lon}&units=${currentUnit}&appid=${apiKey}`
-        );
+        // Fetch current weather
+        const currentUrl = `https://api.openweathermap.org/data/2.5/weather?lat=${lat}&lon=${lon}&units=${currentUnit}&appid=${apiKey}`;
+        const currentData = await fetchWeatherData(currentUrl, "current weather");
 
-        if (response.status === 400) {
-            throw new Error("Invalid coordinates. Please check and try again.");
-        } else if (response.status === 401) {
-            throw new Error("API key error. Please check your API key.");
-        } else if (!response.ok) {
-            throw new Error(
-                `Weather service error (${response.status}). Please try again later.`
-            );
-        }
+        currentWeatherData = currentData;
+        updateWeatherUI(currentData);
 
-        const data = await response.json();
-        currentWeatherData = data; // Store current weather data
-        updateWeatherUI(data);
-        getForecastByCoords(lat, lon);
+        // Fetch forecast
+        const forecastUrl = `https://api.openweathermap.org/data/2.5/forecast?lat=${lat}&lon=${lon}&units=${currentUnit}&appid=${apiKey}`;
+        const forecastData = await fetchWeatherData(forecastUrl, "forecast");
 
-        // Clear the error message if it was displayed
-        errorMessage.style.display = "none";
+        currentForecastData = forecastData;
+        updateForecastUI(forecastData);
 
-        // Save the coordinates to localStorage
-        localStorage.setItem("lastLat", lat);
-        localStorage.setItem("lastLon", lon);
+        // Store successful coordinates
+        localStorage.setItem("lastLat", lat.toString());
+        localStorage.setItem("lastLon", lon.toString());
+
+        // Clear error message
+        if (errorMessage) errorMessage.style.display = "none";
+
     } catch (error) {
-        showError(
-            error.message || "Failed to fetch weather data. Please try again."
-        );
-        console.error("Error fetching weather data:", error);
+        showError(error.message || "Failed to fetch weather data. Please try again.");
     }
 }
 
-// Function to update UI with weather data
+// UI Update Functions
 function updateWeatherUI(data) {
     try {
-        // Format the city name, including coordinates when available
+        // Update location display
         let locationText = `${data.name}, ${data.sys.country}`;
-
-        // If we're using coordinates and they're stored, show them in the UI
         if (currentLat !== null && currentLon !== null) {
             locationText += ` (${currentLat.toFixed(4)}, ${currentLon.toFixed(4)})`;
         }
+        if (cityName) cityName.textContent = locationText;
 
-        cityName.textContent = locationText;
-
-        // Update temperature with current unit
+        // Update temperature
         const tempUnit = currentUnit === "metric" ? "°C" : "°F";
-        temperature.textContent = `${Math.round(data.main.temp)}${tempUnit}`;
+        if (temperature) temperature.textContent = `${Math.round(data.main.temp)}${tempUnit}`;
 
-        weatherDescription.textContent = data.weather[0]?.description || "Unknown";
-        humidity.textContent = `${data.main.humidity}%`;
-
-        // Update wind speed with current unit
-        const windUnit = currentUnit === "metric" ? "km/h" : "mph";
-        windSpeed.textContent = `${data.wind.speed.toFixed(1)} ${windUnit}`;
-
-        // Set weather icon
-        const iconCode = data.weather[0]?.icon || "50d"; // Default to mist icon if missing
-        weatherIcon.src = `https://openweathermap.org/img/wn/${iconCode}@2x.png`;
-        weatherIcon.onerror = function () {
-            // Fallback if the icon fails to load
-            this.src = "/api/placeholder/100/100";
-            this.alt = "Weather icon unavailable";
-        };
-
-        // Hide error message if it was shown
-        errorMessage.style.display = "none";
-    } catch (error) {
-        showError("Error displaying weather data. Try refreshing the page.");
-        console.error("Error updating UI:", error);
-    }
-}
-
-// Function to get forecast data by city name
-async function getForecastData(city) {
-    try {
-        const response = await fetch(
-            `https://api.openweathermap.org/data/2.5/forecast?q=${encodeURIComponent(
-                city
-            )}&units=${currentUnit}&appid=${apiKey}`
-        );
-
-        if (!response.ok) {
-            throw new Error("Forecast data not available for this location");
+        // Update weather description
+        if (weatherDescription) {
+            weatherDescription.textContent = data.weather[0]?.description || "Unknown";
         }
 
-        const data = await response.json();
-        currentForecastData = data; // Store current forecast data
-        updateForecastUI(data);
-    } catch (error) {
-        console.error("Error fetching forecast data:", error);
-        // Don't show error to user, as the main weather is still shown
-    } finally {
-        hideLoader();
-    }
-}
+        // Update humidity
+        if (humidity) humidity.textContent = `${data.main.humidity}%`;
 
-// Function to get forecast data by coordinates
-async function getForecastByCoords(lat, lon) {
-    try {
-        const response = await fetch(
-            `https://api.openweathermap.org/data/2.5/forecast?lat=${lat}&lon=${lon}&units=${currentUnit}&appid=${apiKey}`
-        );
+        // Update wind speed
+        const windUnit = currentUnit === "metric" ? "m/s" : "mph";
+        if (windSpeed) windSpeed.textContent = `${data.wind.speed.toFixed(1)} ${windUnit}`;
 
-        if (!response.ok) {
-            throw new Error("Forecast data not available for this location");
+        // Update weather icon
+        if (weatherIcon) {
+            const iconCode = data.weather[0]?.icon || "50d";
+            weatherIcon.src = `https://openweathermap.org/img/wn/${iconCode}@2x.png`;
+            weatherIcon.alt = data.weather[0]?.description || "Weather icon";
+            weatherIcon.onerror = function () {
+                this.alt = "Weather icon unavailable";
+                this.style.display = "none";
+            };
         }
 
-        const data = await response.json();
-        currentForecastData = data; // Store current forecast data
-        updateForecastUI(data);
     } catch (error) {
-        console.error("Error fetching forecast data:", error);
-        // Don't show error to user, as the main weather is still shown
-    } finally {
-        hideLoader();
+        showError("Error displaying weather data. Please try refreshing.");
+        console.error("UI Update Error:", error);
     }
 }
 
-// Function to update forecast UI
 function updateForecastUI(data) {
     try {
-        // Clear previous forecast data
+        if (!forecastContainer) return;
+
         forecastContainer.innerHTML = "";
 
-        // Check if there's valid forecast data
         if (!data || !data.list || data.list.length === 0) {
-            forecastContainer.innerHTML =
-                '<p class="forecast-error">Forecast data unavailable</p>';
+            forecastContainer.innerHTML = '<p class="forecast-error">Forecast data unavailable</p>';
             hideLoader();
             return;
         }
 
-        // Get forecast for the next 3 days (at noon)
-        const forecastDays = {};
-        const currentDate = new Date().getDate();
+        // Get forecast for next 3 days at noon (12:00:00)
+        const dailyForecasts = data.list
+            .filter(item => item.dt_txt.includes("12:00:00"))
+            .slice(0, 3);
 
-        data.list.forEach((item) => {
-            const date = new Date(item.dt * 1000);
-            const day = date.getDate();
-
-            // Skip current day and only take data for noon (around 12:00)
-            if (
-                day !== currentDate &&
-                !forecastDays[day] &&
-                date.getHours() >= 11 &&
-                date.getHours() <= 13
-            ) {
-                forecastDays[day] = item;
-            }
-        });
-
-        // If no forecast days were found, try another approach
-        if (Object.keys(forecastDays).length === 0) {
-            // Just take the next 3 entries that are not from today
-            let count = 0;
-            for (const item of data.list) {
-                const date = new Date(item.dt * 1000);
-                const day = date.getDate();
-
-                if (day !== currentDate) {
-                    forecastDays[count] = item;
-                    count++;
-                    if (count >= 3) break;
-                }
-            }
+        // If no noon forecasts, get next 3 available forecasts
+        if (dailyForecasts.length === 0) {
+            const currentDate = new Date().getDate();
+            const availableForecasts = data.list.filter(item => {
+                const forecastDate = new Date(item.dt * 1000).getDate();
+                return forecastDate !== currentDate;
+            }).slice(0, 3);
+            dailyForecasts.push(...availableForecasts);
         }
 
-        // Take only the first 3 days
-        const forecastItems = Object.values(forecastDays).slice(0, 3);
-
-        if (forecastItems.length === 0) {
-            forecastContainer.innerHTML =
-                '<p class="forecast-error">No future forecast data available</p>';
+        if (dailyForecasts.length === 0) {
+            forecastContainer.innerHTML = '<p class="forecast-error">No forecast data available</p>';
             hideLoader();
             return;
         }
 
-        // Get the temperature unit
         const tempUnit = currentUnit === "metric" ? "°C" : "°F";
 
-        forecastItems.forEach((day) => {
+        dailyForecasts.forEach(day => {
             const date = new Date(day.dt * 1000);
+            const formattedDate = date.toLocaleDateString("en-US", {
+                weekday: "short",
+                month: "short",
+                day: "numeric",
+            });
             const temp = Math.round(day.main.temp);
             const description = day.weather[0]?.description || "Unknown";
             const iconCode = day.weather[0]?.icon || "50d";
 
             const forecastDay = document.createElement("div");
             forecastDay.className = "forecast-day";
-
             forecastDay.innerHTML = `
-                <p class="forecast-date">${date.toLocaleDateString("en-US", {
-                weekday: "short",
-                month: "short",
-                day: "numeric",
-            })}</p>
-                <img src="https://openweathermap.org/img/wn/${iconCode}.png" alt="Weather Icon" class="forecast-icon" onerror="this.src='/api/placeholder/60/60'; this.alt='Icon unavailable';">
+                <p class="forecast-date">${formattedDate}</p>
+                <img src="https://openweathermap.org/img/wn/${iconCode}.png" alt="${description}" class="forecast-icon" onerror="this.style.display='none';">
                 <p class="forecast-temp">${temp}${tempUnit}</p>
                 <p class="forecast-desc">${description}</p>
             `;
 
             forecastContainer.appendChild(forecastDay);
         });
+
     } catch (error) {
-        console.error("Error updating forecast UI:", error);
-        forecastContainer.innerHTML =
-            '<p class="forecast-error">Error displaying forecast</p>';
+        console.error("Forecast UI Error:", error);
+        if (forecastContainer) {
+            forecastContainer.innerHTML = '<p class="forecast-error">Error displaying forecast</p>';
+        }
     } finally {
         hideLoader();
     }
 }
 
-// Function to refresh the weather data
-function refreshWeatherData() {
-    showLoader();
+// Feature Functions
+function handleSearch() {
+    const input = cityInput?.value?.trim();
 
-    // Create animation effect for refresh button
-    const refreshIcon = refreshBtn.querySelector('.refresh-icon');
-    refreshIcon.style.transition = 'transform 0.5s ease-in-out';
-    refreshIcon.style.transform = 'rotate(360deg)';
+    if (!input) {
+        showError("Please enter a city name, PIN code, or coordinates (lat,lon).");
+        return;
+    }
 
-    setTimeout(() => {
-        refreshIcon.style.transform = 'rotate(0deg)';
-    }, 500);
+    const parsedInput = parseSearchInput(input);
 
-    // Check which source to use for refreshing
-    if (currentLat !== null && currentLon !== null) {
-        // Refresh using coordinates
-        getWeatherByCoords(currentLat, currentLon);
-    } else {
-        // Try to use city name
-        const lastCity = localStorage.getItem("lastCity");
-        if (lastCity) {
-            getWeatherData(lastCity);
-        } else {
-            // If no data available, try geolocation
-            getUserLocation();
-        }
+    if (!parsedInput) {
+        showError("Invalid input format. Please try again.");
+        return;
+    }
+
+    switch (parsedInput.type) {
+        case 'coords':
+            getWeatherByCoords(parsedInput.lat, parsedInput.lon);
+            break;
+        case 'zip':
+        case 'city':
+            getWeatherByQuery(parsedInput.query);
+            break;
+        default:
+            showError("Unable to process your search. Please try again.");
     }
 }
 
-// Function to toggle temperature units
-function toggleTemperatureUnit() {
-    // Update current unit based on toggle state
-    currentUnit = unitToggle.checked ? "imperial" : "metric";
-
-    // Save preference to localStorage
-    localStorage.setItem("preferredUnit", currentUnit);
-
-    // If we have weather data, update the UI without fetching new data
-    if (currentWeatherData) {
-        // If we already have temperature data for the current units, just update the UI
-        if (currentLat !== null && currentLon !== null) {
-            // Refresh using coordinates with new unit
-            getWeatherByCoords(currentLat, currentLon);
-        } else {
-            // Refresh using city name with new unit
-            const lastCity = localStorage.getItem("lastCity");
-            if (lastCity) {
-                getWeatherData(lastCity);
-            }
-        }
-    }
-}
-
-// Function to get user's location
 function getUserLocation() {
     showLoader();
-    if (navigator.geolocation) {
-        navigator.geolocation.getCurrentPosition(
-            // Success callback
-            (position) => {
-                const lat = position.coords.latitude;
-                const lon = position.coords.longitude;
 
-                // Update the input fields with the coordinates
-                latInput.value = lat.toFixed(6);
-                lonInput.value = lon.toFixed(6);
+    if (!navigator.geolocation) {
+        showError("Geolocation is not supported by your browser.");
+        fallbackToDefaultCity();
+        return;
+    }
 
-                getWeatherByCoords(lat, lon);
-            },
-            // Error callback
-            (error) => {
-                let errorMsg;
-                switch (error.code) {
-                    case error.PERMISSION_DENIED:
-                        errorMsg =
-                            "Location access denied. Please enable location services in your browser or search for a city manually.";
-                        break;
-                    case error.POSITION_UNAVAILABLE:
-                        errorMsg =
-                            "Location information is unavailable. Please search for a city manually.";
-                        break;
-                    case error.TIMEOUT:
-                        errorMsg =
-                            "Location request timed out. Please search for a city manually.";
-                        break;
-                    default:
-                        errorMsg =
-                            "An unknown error occurred while getting your location. Please search for a city manually.";
-                        break;
-                }
+    navigator.geolocation.getCurrentPosition(
+        (position) => {
+            const lat = position.coords.latitude;
+            const lon = position.coords.longitude;
 
-                showError(errorMsg);
+            // Update coordinate inputs if they exist
+            if (latInput) latInput.value = lat.toFixed(6);
+            if (lonInput) lonInput.value = lon.toFixed(6);
 
-                // Try to load last searched city from localStorage
-                const lastCity = localStorage.getItem("lastCity");
-                if (lastCity) {
-                    getWeatherData(lastCity);
-                } else {
-                    // Fall back to default city
-                    getWeatherData("Guwahati");
-                }
-            },
-            // Options
-            {
-                enableHighAccuracy: true,
-                timeout: 5000,
-                maximumAge: 0,
+            getWeatherByCoords(lat, lon);
+        },
+        (error) => {
+            let errorMsg;
+            switch (error.code) {
+                case error.PERMISSION_DENIED:
+                    errorMsg = "Location access denied. Please enable location services or search manually.";
+                    break;
+                case error.POSITION_UNAVAILABLE:
+                    errorMsg = "Location information unavailable. Searching manually.";
+                    break;
+                case error.TIMEOUT:
+                    errorMsg = "Location request timed out. Searching manually.";
+                    break;
+                default:
+                    errorMsg = "Unable to get your location. Searching manually.";
             }
-        );
-    } else {
-        showError(
-            "Geolocation is not supported by your browser. Please search for a city manually."
-        );
 
-        // Try to load last searched city from localStorage
-        const lastCity = localStorage.getItem("lastCity");
-        if (lastCity) {
-            getWeatherData(lastCity);
-        } else {
-            // Fall back to default city
-            getWeatherData("Guwahati");
+            showError(errorMsg);
+            fallbackToDefaultCity();
+        },
+        {
+            enableHighAccuracy: true,
+            timeout: 8000,
+            maximumAge: 300000 // 5 minutes
         }
-    }
+    );
 }
 
-// Function to display current coordinates
-function showCurrentCoordinates() {
-    if (currentLat !== null && currentLon !== null) {
-        latInput.value = currentLat.toFixed(6);
-        lonInput.value = currentLon.toFixed(6);
-
-        // Flash the fields to indicate they've been updated
-        [latInput, lonInput].forEach((input) => {
-            input.style.backgroundColor = "#d0f0c0";
-            setTimeout(() => {
-                input.style.backgroundColor = "";
-            }, 800);
-        });
-    } else {
-        // Try to load coordinates from localStorage
-        const lastLat = localStorage.getItem("lastLat");
-        const lastLon = localStorage.getItem("lastLon");
-
-        if (lastLat && lastLon) {
-            latInput.value = lastLat;
-            lonInput.value = lastLon;
-
-            // Flash the fields to indicate they've been updated
-            [latInput, lonInput].forEach((input) => {
-                input.style.backgroundColor = "#d0f0c0";
-                setTimeout(() => {
-                    input.style.backgroundColor = "";
-                }, 800);
-            });
-        } else {
-            // If no coordinates are stored, try to get them
-            showError("No coordinates available. Getting your current location...");
-            getUserLocation();
-        }
-    }
-}
-
-// Function to validate coordinates
-function validateCoordinates(lat, lon) {
-    // Check if both values are numbers
-    if (isNaN(lat) || isNaN(lon)) {
-        showError("Coordinates must be valid numbers");
-        return false;
-    }
-
-    // Check latitude range (-90 to 90)
-    if (lat < -90 || lat > 90) {
-        showError("Latitude must be between -90 and 90 degrees");
-        return false;
-    }
-
-    // Check longitude range (-180 to 180)
-    if (lon < -180 || lon > 180) {
-        showError("Longitude must be between -180 and 180 degrees");
-        return false;
-    }
-
-    return true;
-}
-
-// Function to handle network errors
-function handleNetworkErrors() {
-    const networkStatus = document.getElementById("network-status");
-    const statusIcon = document.getElementById("status-icon");
-    const statusText = document.getElementById("status-text");
-
-    window.addEventListener("online", () => {
-        // When connection is restored
-        networkStatus.classList.remove("offline");
-        networkStatus.classList.add("online");
-        statusIcon.textContent = "📶";
-        statusText.textContent = "Online";
-
-        // Refresh data
-        const lastCity = localStorage.getItem("lastCity");
-        if (lastCity) {
-            getWeatherData(lastCity);
-        } else {
-            getUserLocation();
-        }
-    });
-
-    window.addEventListener("offline", () => {
-        networkStatus.classList.remove("online");
-        networkStatus.classList.add("offline");
-        statusIcon.textContent = "❌";
-        statusText.textContent = "Offline";
-
-        showError("You're offline. Please check your internet connection.");
-    });
-}
-
-// Event listeners
-searchBtn.addEventListener("click", () => {
-    const city = cityInput.value.trim();
-    if (city) {
-        getWeatherData(city);
-    } else {
-        showError("Please enter a city name");
-    }
-});
-
-cityInput.addEventListener("keypress", (event) => {
-    if (event.key === "Enter") {
-        const city = cityInput.value.trim();
-        if (city) {
-            getWeatherData(city);
-        } else {
-            showError("Please enter a city name");
-        }
-    }
-});
-
-// Clear error when user starts typing
-cityInput.addEventListener("input", () => {
-    errorMessage.style.display = "none";
-});
-
-locateBtn.addEventListener("click", getUserLocation);
-
-// Event listener for coordinates search button
-coordsSearchBtn.addEventListener("click", () => {
-    const lat = parseFloat(latInput.value);
-    const lon = parseFloat(lonInput.value);
-
-    if (validateCoordinates(lat, lon)) {
-        getWeatherByCoords(lat, lon);
-    }
-});
-
-// Event listener for coordinate inputs
-[latInput, lonInput].forEach((input) => {
-    input.addEventListener("keypress", (event) => {
-        if (event.key === "Enter") {
-            coordsSearchBtn.click();
-        }
-    });
-
-    // Clear error when user starts typing
-    input.addEventListener("input", () => {
-        errorMessage.style.display = "none";
-    });
-});
-
-// Event listener for show coordinates button
-showCoordsBtn.addEventListener("click", showCurrentCoordinates);
-
-// NEW FEATURE: Event listener for refresh button
-refreshBtn.addEventListener("click", refreshWeatherData);
-
-// NEW FEATURE: Event listener for unit toggle
-unitToggle.addEventListener("change", toggleTemperatureUnit);
-
-// Setup network error handling
-handleNetworkErrors();
-
-// On load, try to get user's location or use last successful search
-window.addEventListener("load", () => {
-    // Load preferred unit from localStorage
-    const preferredUnit = localStorage.getItem("preferredUnit");
-    if (preferredUnit) {
-        currentUnit = preferredUnit;
-        // Update toggle based on stored preference
-        unitToggle.checked = preferredUnit === "imperial";
-    }
-
-    // First check if we have a stored location
+function fallbackToDefaultCity() {
+    // Try last successful search first
     const lastCity = localStorage.getItem("lastCity");
     const lastLat = localStorage.getItem("lastLat");
     const lastLon = localStorage.getItem("lastLon");
@@ -660,9 +417,194 @@ window.addEventListener("load", () => {
     if (lastLat && lastLon) {
         getWeatherByCoords(parseFloat(lastLat), parseFloat(lastLon));
     } else if (lastCity) {
-        getWeatherData(lastCity);
+        getWeatherByQuery(`q=${encodeURIComponent(lastCity)}`);
     } else {
-        // Ask for user's location by default
+        // Default to Guwahati
+        getWeatherByQuery("q=Guwahati");
+    }
+}
+
+function refreshWeatherData() {
+    if (!refreshBtn) return;
+
+    showLoader();
+
+    // Animate refresh button
+    const refreshIcon = refreshBtn.querySelector('.refresh-icon');
+    if (refreshIcon) {
+        refreshIcon.style.transition = 'transform 0.5s ease-in-out';
+        refreshIcon.style.transform = 'rotate(360deg)';
+        setTimeout(() => {
+            refreshIcon.style.transform = 'rotate(0deg)';
+        }, 500);
+    }
+
+    // Refresh based on current data source
+    if (currentLat !== null && currentLon !== null) {
+        getWeatherByCoords(currentLat, currentLon);
+    } else if (currentQuery) {
+        getWeatherByQuery(currentQuery);
+    } else {
         getUserLocation();
     }
-});
+}
+
+function toggleTemperatureUnit() {
+    if (!unitToggle) return;
+
+    // Update current unit
+    currentUnit = unitToggle.checked ? "imperial" : "metric";
+
+    // Save preference
+    localStorage.setItem("preferredUnit", currentUnit);
+
+    // Refresh data with new unit
+    if (currentLat !== null && currentLon !== null) {
+        getWeatherByCoords(currentLat, currentLon);
+    } else if (currentQuery) {
+        getWeatherByQuery(currentQuery);
+    }
+}
+
+function showCurrentCoordinates() {
+    if (!showCoordsBtn || !latInput || !lonInput) return;
+
+    if (currentLat !== null && currentLon !== null) {
+        latInput.value = currentLat.toFixed(6);
+        lonInput.value = currentLon.toFixed(6);
+
+        // Visual feedback
+        [latInput, lonInput].forEach(input => {
+            input.style.backgroundColor = "#d0f0c0";
+            setTimeout(() => {
+                input.style.backgroundColor = "";
+            }, 800);
+        });
+    } else {
+        showError("No coordinates available. Getting your location...");
+        getUserLocation();
+    }
+}
+
+function handleCoordinateSearch() {
+    if (!latInput || !lonInput) return;
+
+    const lat = parseFloat(latInput.value);
+    const lon = parseFloat(lonInput.value);
+
+    if (validateCoordinates(lat, lon)) {
+        getWeatherByCoords(lat, lon);
+    }
+}
+
+// Network status handling
+function setupNetworkHandling() {
+    window.addEventListener("online", () => {
+        // Refresh when back online
+        if (currentLat !== null && currentLon !== null) {
+            getWeatherByCoords(currentLat, currentLon);
+        } else if (currentQuery) {
+            getWeatherByQuery(currentQuery);
+        }
+    });
+
+    window.addEventListener("offline", () => {
+        showError("You're offline. Please check your internet connection.");
+    });
+}
+
+// Event Listeners Setup
+function setupEventListeners() {
+    // Search functionality
+    if (searchBtn) {
+        searchBtn.addEventListener("click", handleSearch);
+    }
+
+    if (cityInput) {
+        cityInput.addEventListener("keypress", (event) => {
+            if (event.key === "Enter") handleSearch();
+        });
+
+        cityInput.addEventListener("input", () => {
+            if (errorMessage) errorMessage.style.display = "none";
+        });
+    }
+
+    // Location functionality
+    if (locateBtn) {
+        locateBtn.addEventListener("click", getUserLocation);
+    }
+
+    // Coordinate functionality
+    if (coordsSearchBtn) {
+        coordsSearchBtn.addEventListener("click", handleCoordinateSearch);
+    }
+
+    if (latInput && lonInput) {
+        [latInput, lonInput].forEach(input => {
+            input.addEventListener("keypress", (event) => {
+                if (event.key === "Enter") handleCoordinateSearch();
+            });
+
+            input.addEventListener("input", () => {
+                if (errorMessage) errorMessage.style.display = "none";
+            });
+        });
+    }
+
+    if (showCoordsBtn) {
+        showCoordsBtn.addEventListener("click", showCurrentCoordinates);
+    }
+
+    // Enhanced features
+    if (refreshBtn) {
+        refreshBtn.addEventListener("click", refreshWeatherData);
+    }
+
+    if (unitToggle) {
+        unitToggle.addEventListener("change", toggleTemperatureUnit);
+    }
+}
+
+// Initialization
+function initializeApp() {
+    // Update current date
+    if (dateElement) {
+        dateElement.textContent = formatDate(new Date());
+    }
+
+    // Load saved preferences
+    const preferredUnit = localStorage.getItem("preferredUnit");
+    if (preferredUnit) {
+        currentUnit = preferredUnit;
+        if (unitToggle) {
+            unitToggle.checked = preferredUnit === "imperial";
+        }
+    }
+
+    // Setup event listeners
+    setupEventListeners();
+
+    // Setup network handling
+    setupNetworkHandling();
+
+    // Load weather data
+    const lastLat = localStorage.getItem("lastLat");
+    const lastLon = localStorage.getItem("lastLon");
+    const lastCity = localStorage.getItem("lastCity");
+
+    if (lastLat && lastLon) {
+        getWeatherByCoords(parseFloat(lastLat), parseFloat(lastLon));
+    } else if (lastCity) {
+        getWeatherByQuery(`q=${encodeURIComponent(lastCity)}`);
+    } else {
+        getUserLocation();
+    }
+}
+
+// Start the application when DOM is loaded
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initializeApp);
+} else {
+    initializeApp();
+}
